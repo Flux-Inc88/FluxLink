@@ -1,22 +1,22 @@
-# LavalinkServer/docker/Dockerfile
+# -------- Stage 1: Build Lavalink --------
+FROM gradle:8.8-jdk17 AS builder
 
+WORKDIR /app
+COPY . .
+
+RUN ./gradlew :Lavalink-Server:build -x test -x check
+
+# -------- Stage 2: Run Lavalink --------
 FROM eclipse-temurin:18-jre-jammy
 
-# Create user
 RUN groupadd -g 322 lavalink && \
     useradd -r -u 322 -g lavalink lavalink
 
-WORKDIR /app
+WORKDIR /opt/Lavalink
 
-# Copy everything from LavalinkServer (the parent of docker/) into /app
-COPY .. .
-
-RUN chown -R lavalink:lavalink /app
+COPY --from=builder /app/Lavalink-Server/build/libs/Lavalink.jar Lavalink.jar
+COPY Lavalink-Server/application.yml /opt/Lavalink/application.yml
 
 USER lavalink
-
-RUN ./gradlew clean build -x check -x test
-
-COPY build/libs/Lavalink.jar Lavalink.jar
 
 ENTRYPOINT ["java", "-Djdk.tls.client.protocols=TLSv1.1,TLSv1.2", "-jar", "Lavalink.jar"]
