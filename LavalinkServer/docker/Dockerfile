@@ -1,19 +1,22 @@
+# LavalinkServer/docker/Dockerfile
+
 FROM eclipse-temurin:18-jre-jammy
 
-# Create lavalink user
+# Create user
 RUN groupadd -g 322 lavalink && \
     useradd -r -u 322 -g lavalink lavalink
 
-WORKDIR /opt/Lavalink
+WORKDIR /app
 
-RUN chown -R lavalink:lavalink /opt/Lavalink
+# Copy everything from LavalinkServer (the parent of docker/) into /app
+COPY .. .
+
+RUN chown -R lavalink:lavalink /app
 
 USER lavalink
 
-# Download Lavalink jar directly
-ADD https://github.com/lavalink-devs/Lavalink/releases/latest/download/Lavalink.jar Lavalink.jar
+RUN ./gradlew clean build -x check -x test
 
-# Copy your application.yml
-COPY application.yml .
+COPY build/libs/Lavalink.jar Lavalink.jar
 
 ENTRYPOINT ["java", "-Djdk.tls.client.protocols=TLSv1.1,TLSv1.2", "-jar", "Lavalink.jar"]
