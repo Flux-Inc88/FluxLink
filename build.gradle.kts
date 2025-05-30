@@ -109,16 +109,21 @@ subprojects {
 
 @SuppressWarnings("GrMethodMayBeStatic")
 fun versionFromTag(): String {
-    Grgit.open(mapOf("currentDir" to project.rootDir)).use { git ->
-        val headTag = git.tag
-            .list()
-            .find { it.commit.id == git.head().id }
+    return try {
+        Grgit.open(mapOf("currentDir" to project.rootDir)).use { git ->
+            val headTag = git.tag
+                .list()
+                .find { it.commit.id == git.head().id }
 
-        val clean = git.status().isClean || System.getenv("CI") != null
-        if (!clean) {
-            println("Git state is dirty, setting version as snapshot.")
+            val clean = git.status().isClean || System.getenv("CI") != null
+            if (!clean) {
+                println("Git state is dirty, setting version as snapshot.")
+            }
+
+            if (headTag != null && clean) headTag.name else "${git.head().id}-SNAPSHOT"
         }
-
-        return if (headTag != null && clean) headTag.name else "${git.head().id}-SNAPSHOT"
+    } catch (e: Exception) {
+        println("⚠️ Warning: .git not found, defaulting version to 'snapshot'")
+        "snapshot"
     }
 }
